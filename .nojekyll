@@ -1,0 +1,21 @@
+
+## 🚀 Инструкция по развертыванию на GitHub Pages:
+
+### Шаг 1: Создайте репозиторий на GitHub
+1. Зайдите на [GitHub](https://github.com)
+2. Нажмите "New repository"
+3. Назовите репозиторий: `sea-battle-online`
+4. Выберите "Public"
+5. Нажмите "Create repository"
+
+### Шаг 2: Загрузите файлы
+1. Создайте локально папку `sea-battle-online`
+2. Скопируйте туда все 4 файла из примера выше
+3. Инициализируйте Git:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git branch -M main
+   git remote add origin https://github.com/ВАШ_ЛОГИН/sea-battle-online.git
+   git push -u origin main

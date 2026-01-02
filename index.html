@@ -1,0 +1,2788 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sea Battle Online - Играй в браузере</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚢</text></svg>">
+    <style>
+        :root {
+            --primary: #1a237e;
+            --secondary: #3949ab;
+            --accent: #ff4081;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --light: #f5f5f5;
+            --dark: #121212;
+            --ocean-dark: #0d47a1;
+            --ocean-light: #1976d2;
+            --ship-color: #7b1fa2;
+            --hit-color: #ff5252;
+            --miss-color: #448aff;
+            --sunk-color: #37474f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-light));
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px var(--accent); }
+            50% { box-shadow: 0 0 20px var(--accent); }
+        }
+
+        /* Основные стили */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Хедер */
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.3rem;
+            color: #bbdefb;
+            margin-bottom: 25px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        .user-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(26, 35, 126, 0.7);
+            padding: 15px 30px;
+            border-radius: 50px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .user-info span {
+            font-weight: bold;
+            color: #bbdefb;
+            font-size: 1.1rem;
+        }
+
+        /* Кнопки */
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn i {
+            font-size: 1.2rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary), #283593);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(57, 73, 171, 0.4);
+            background: linear-gradient(135deg, #303f9f, #1a237e);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #388e3c);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #f57c00);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #d32f2f);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent), #f50057);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(255, 64, 129, 0.4);
+        }
+
+        /* Авторизация */
+        .auth-container {
+            max-width: 500px;
+            margin: 50px auto;
+            background: rgba(26, 35, 126, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 18px;
+            background: rgba(57, 73, 171, 0.5);
+            border: none;
+            color: #c5cae9;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .auth-tab.active {
+            background: var(--secondary);
+            color: white;
+            font-weight: bold;
+        }
+
+        .auth-tab:hover {
+            background: rgba(57, 73, 171, 0.8);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #e8eaf6;
+            font-size: 1.1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid rgba(79, 195, 247, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.5);
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .auth-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .auth-message.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid var(--success);
+            color: #c8e6c9;
+            display: block;
+        }
+
+        .auth-message.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 2px solid var(--danger);
+            color: #ffcdd2;
+            display: block;
+        }
+
+        /* Лобби */
+        .lobby-container {
+            background: rgba(26, 35, 126, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .game-modes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .mode-card {
+            background: rgba(57, 73, 171, 0.7);
+            border-radius: 20px;
+            padding: 35px;
+            text-align: center;
+            transition: all 0.4s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .mode-card:hover::before {
+            left: 100%;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-15px) scale(1.03);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: #4fc3f7;
+        }
+
+        .mode-icon {
+            font-size: 4rem;
+            margin-bottom: 25px;
+            color: #4fc3f7;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .mode-card h3 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #bbdefb;
+        }
+
+        .mode-card p {
+            color: #c5cae9;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        /* Социальная панель */
+        .social-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .panel-box {
+            background: rgba(57, 73, 171, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            color: #4fc3f7;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(79, 195, 247, 0.3);
+        }
+
+        /* Список друзей */
+        .friend-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px;
+            background: rgba(38, 50, 56, 0.5);
+            border-radius: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .friend-item:hover {
+            background: rgba(38, 50, 56, 0.8);
+            transform: translateX(10px);
+        }
+
+        .friend-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .friend-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .friend-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .friend-status.online {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .friend-status.offline {
+            background: #78909c;
+        }
+
+        .friend-status.ingame {
+            background: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Чат */
+        .chat-messages {
+            height: 320px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-message {
+            padding: 12px 18px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            background: rgba(57, 73, 171, 0.5);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .chat-message.own {
+            background: rgba(76, 175, 80, 0.3);
+            margin-left: 20%;
+            border-left: 4px solid var(--success);
+        }
+
+        .chat-message.system {
+            background: rgba(255, 152, 0, 0.3);
+            font-style: italic;
+            text-align: center;
+            border-left: 4px solid var(--warning);
+        }
+
+        .chat-message .sender {
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-message .time {
+            font-size: 0.9rem;
+            color: #b0bec5;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 15px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid rgba(79, 195, 247, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #4fc3f7;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.5);
+        }
+
+        /* Игровой экран */
+        .game-container {
+            background: rgba(26, 35, 126, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding: 25px;
+            background: rgba(57, 73, 171, 0.7);
+            border-radius: 20px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .game-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .game-status {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4fc3f7;
+            animation: pulse 2s infinite;
+        }
+
+        .game-turn {
+            font-size: 1.4rem;
+            color: #bbdefb;
+        }
+
+        .game-timer {
+            font-size: 1.3rem;
+            color: #c5cae9;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        /* Игровые поля */
+        .game-boards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 1100px) {
+            .game-boards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .board-container {
+            background: rgba(57, 73, 171, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .board-container.active {
+            transform: scale(1.03);
+            box-shadow: 0 0 30px rgba(79, 195, 247, 0.5);
+            border: 2px solid #4fc3f7;
+        }
+
+        .board-title {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: #bbdefb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 3px;
+            width: 420px;
+            height: 420px;
+            margin: 0 auto;
+            border: 3px solid #4fc3f7;
+            background: rgba(13, 71, 161, 0.5);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (max-width: 500px) {
+            .game-board {
+                width: 320px;
+                height: 320px;
+            }
+        }
+
+        .cell {
+            background: rgba(79, 195, 247, 0.2);
+            border: 1px solid rgba(79, 195, 247, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell:hover:not(.hit):not(.miss):not(.ship) {
+            background: rgba(79, 195, 247, 0.4);
+            transform: scale(1.1);
+        }
+
+        .cell.ship {
+            background: rgba(123, 31, 162, 0.7);
+            border-color: var(--ship-color);
+        }
+
+        .cell.ship::before {
+            content: '';
+            position: absolute;
+            width: 70%;
+            height: 70%;
+            background: rgba(123, 31, 162, 0.5);
+            border-radius: 50%;
+        }
+
+        .cell.hit {
+            background: linear-gradient(135deg, var(--hit-color), #ff1744);
+            animation: glow 1s infinite;
+        }
+
+        .cell.hit::after {
+            content: "💥";
+            font-size: 1.8rem;
+            animation: wave 0.5s ease-out;
+        }
+
+        .cell.miss {
+            background: linear-gradient(135deg, var(--miss-color), #2979ff);
+        }
+
+        .cell.miss::after {
+            content: "○";
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .cell.sunk {
+            background: linear-gradient(135deg, var(--sunk-color), #263238);
+        }
+
+        .cell.sunk::after {
+            content: "💀";
+            font-size: 1.5rem;
+        }
+
+        /* Панель кораблей */
+        .ships-panel {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 40px 0;
+            padding: 30px;
+            background: rgba(57, 73, 171, 0.7);
+            border-radius: 20px;
+        }
+
+        .ship-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 15px 20px;
+            background: rgba(38, 50, 56, 0.7);
+            border-radius: 15px;
+            transition: transform 0.3s;
+        }
+
+        .ship-item.placed {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .ship-item.placed .ship-cell {
+            background: rgba(123, 31, 162, 0.7);
+        }
+
+        .ship-cell {
+            width: 28px;
+            height: 28px;
+            background: var(--ship-color);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .ship-info {
+            margin-left: 15px;
+            font-weight: bold;
+            color: #4fc3f7;
+            font-size: 1.1rem;
+        }
+
+        /* Управление */
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        /* Статистика */
+        .stats-container {
+            background: rgba(26, 35, 126, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px auto;
+            max-width: 1000px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(57, 73, 171, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-value {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-label {
+            font-size: 1.3rem;
+            color: #bbdefb;
+        }
+
+        /* Модальные окна */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: rgba(26, 35, 126, 0.95);
+            padding: 50px;
+            border-radius: 25px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(79, 195, 247, 0.5);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #4fc3f7;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #ff4081;
+        }
+
+        .invite-code {
+            font-size: 3rem;
+            font-weight: bold;
+            letter-spacing: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 15px;
+            color: var(--success);
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        /* Индикатор подключения */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .connection-status.connected {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success);
+            border: 2px solid var(--success);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--danger);
+            border: 2px solid var(--danger);
+        }
+
+        .connection-status .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.connected .status-dot {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .connection-status.disconnected .status-dot {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+
+        /* Звуковая кнопка */
+        .sound-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(26, 35, 126, 0.9);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s;
+            border: 2px solid rgba(79, 195, 247, 0.5);
+        }
+
+        .sound-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Загрузчик */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(18, 18, 18, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loader-spinner {
+            width: 100px;
+            height: 100px;
+            border: 8px solid rgba(79, 195, 247, 0.3);
+            border-top: 8px solid #4fc3f7;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+            margin-bottom: 30px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            font-size: 1.5rem;
+            color: #4fc3f7;
+            text-align: center;
+        }
+
+        /* Фоновые элементы */
+        .ocean-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%;
+            height: 100px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231a237e" fill-opacity="0.5" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: 100% 100%;
+            animation: wave 15s linear infinite;
+        }
+
+        .wave:nth-child(2) {
+            bottom: 20px;
+            opacity: 0.7;
+            animation: wave 20s linear infinite reverse;
+        }
+
+        .wave:nth-child(3) {
+            bottom: 40px;
+            opacity: 0.3;
+            animation: wave 25s linear infinite;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .game-boards {
+                grid-template-columns: 1fr;
+            }
+            
+            .game-board {
+                width: 320px;
+                height: 320px;
+            }
+            
+            .social-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                padding: 30px;
+            }
+            
+            .invite-code {
+                font-size: 2rem;
+                letter-spacing: 5px;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .auth-container,
+            .lobby-container,
+            .game-container {
+                padding: 25px;
+            }
+            
+            .game-board {
+                width: 280px;
+                height: 280px;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .mode-card {
+                padding: 25px;
+            }
+            
+            .mode-icon {
+                font-size: 3rem;
+            }
+            
+            .mode-card h3 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Фоновые волны -->
+    <div class="ocean-background">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+    </div>
+    
+    <!-- Индикатор подключения -->
+    <div class="connection-status disconnected" id="connection-status">
+        <div class="status-dot"></div>
+        <span id="status-text">Офлайн</span>
+    </div>
+    
+    <!-- Кнопка звука -->
+    <div class="sound-toggle" id="sound-toggle">
+        <i class="fas fa-volume-up"></i>
+    </div>
+    
+    <!-- Загрузчик -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Загрузка Sea Battle Online...</div>
+    </div>
+    
+    <!-- Контейнер приложения -->
+    <div class="container">
+        <!-- Хедер -->
+        <div class="header" id="header">
+            <h1><i class="fas fa-anchor"></i> Sea Battle Online</h1>
+            <p class="subtitle">Классическая игра "Морской бой" в современном онлайн-исполнении. Сражайтесь с друзьями или случайными соперниками!</p>
+            <div class="user-info" id="user-info">
+                <span id="username-display">Гость</span>
+                <span id="user-rating">Рейтинг: 1000</span>
+                <div>
+                    <button class="btn btn-primary" id="lobby-btn"><i class="fas fa-home"></i> Лобби</button>
+                    <button class="btn btn-warning" id="stats-btn"><i class="fas fa-chart-line"></i> Статистика</button>
+                    <button class="btn btn-danger" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Экран авторизации -->
+        <div class="screen active" id="auth-screen">
+            <div class="auth-container">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="login-tab">Вход</button>
+                    <button class="auth-tab" id="register-tab">Регистрация</button>
+                </div>
+                
+                <div class="auth-form active" id="login-form">
+                    <div class="form-group">
+                        <label for="login-username"><i class="fas fa-user"></i> Имя пользователя</label>
+                        <input type="text" id="login-username" placeholder="Введите ваш логин">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password"><i class="fas fa-lock"></i> Пароль</label>
+                        <input type="password" id="login-password" placeholder="Введите пароль">
+                    </div>
+                    <button class="btn btn-primary btn-block" id="login-btn">Войти в игру</button>
+                    <div class="auth-message" id="login-message"></div>
+                </div>
+                
+                <div class="auth-form" id="register-form">
+                    <div class="form-group">
+                        <label for="register-username"><i class="fas fa-user"></i> Имя пользователя</label>
+                        <input type="text" id="register-username" placeholder="Придумайте логин (3-15 символов)">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password"><i class="fas fa-lock"></i> Пароль</label>
+                        <input type="password" id="register-password" placeholder="Придумайте пароль (минимум 6 символов)">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email"><i class="fas fa-envelope"></i> Email (опционально)</label>
+                        <input type="email" id="register-email" placeholder="example@mail.com">
+                    </div>
+                    <button class="btn btn-success btn-block" id="register-btn">Создать аккаунт</button>
+                    <div class="auth-message" id="register-message"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Лобби -->
+        <div class="screen" id="lobby-screen">
+            <div class="lobby-container">
+                <h2 style="text-align: center; margin-bottom: 40px; color: #4fc3f7; font-size: 2.5rem;">
+                    <i class="fas fa-gamepad"></i> Выберите режим игры
+                </h2>
+                
+                <div class="game-modes">
+                    <div class="mode-card" id="mode-single">
+                        <div class="mode-icon"><i class="fas fa-robot"></i></div>
+                        <h3>Против ИИ</h3>
+                        <p>Тренируйтесь против искусственного интеллекта. Доступно несколько уровней сложности для оттачивания навыков.</p>
+                        <button class="btn btn-primary" id="play-ai-btn">Играть против ИИ</button>
+                    </div>
+                    
+                    <div class="mode-card" id="mode-friend">
+                        <div class="mode-icon"><i class="fas fa-user-friends"></i></div>
+                        <h3>С другом</h3>
+                        <p>Создайте приватную комнату и пригласите друга по коду или ссылке. Идеально для игры с знакомыми.</p>
+                        <button class="btn btn-success" id="create-room-btn">Создать комнату</button>
+                    </div>
+                    
+                    <div class="mode-card" id="mode-online">
+                        <div class="mode-icon"><i class="fas fa-globe"></i></div>
+                        <h3>Онлайн-матч</h3>
+                        <p>Сразитесь со случайным соперником в рейтинговом матче. Повышайте свой рейтинг и станьте лучшим!</p>
+                        <button class="btn btn-warning" id="find-match-btn">Найти соперника</button>
+                    </div>
+                </div>
+                
+                <div class="social-panel">
+                    <div class="panel-box">
+                        <h3 class="panel-title"><i class="fas fa-users"></i> Онлайн игроки <span id="online-count">(0)</span></h3>
+                        <div id="online-players">
+                            <!-- Список игроков будет здесь -->
+                            <div class="friend-item">
+                                <div class="friend-info">
+                                    <div class="friend-status online"></div>
+                                    <div class="friend-avatar">AI</div>
+                                    <div>
+                                        <div class="friend-name">Искусственный интеллект</div>
+                                        <div class="friend-rating">Рейтинг: 1200</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm">Пригласить</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-box">
+                        <h3 class="panel-title"><i class="fas fa-comments"></i> Глобальный чат</h3>
+                        <div class="chat-messages" id="global-chat">
+                            <!-- Сообщения чата будут здесь -->
+                            <div class="chat-message system">
+                                Добро пожаловать в глобальный чат! Здесь вы можете общаться с другими игроками.
+                            </div>
+                        </div>
+                        <div class="chat-input-container">
+                            <input type="text" class="chat-input" id="global-chat-input" placeholder="Введите сообщение...">
+                            <button class="btn btn-primary" id="send-global-chat"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Игровой экран -->
+        <div class="screen" id="game-screen">
+            <div class="game-container">
+                <div class="game-header">
+                    <div class="game-info">
+                        <div class="game-status" id="game-status">Расстановка кораблей</div>
+                        <div class="game-turn" id="game-turn">Разместите ваши корабли на поле</div>
+                        <div class="game-timer">Время: <span id="timer">00:00</span></div>
+                    </div>
+                    <div class="game-controls">
+                        <button class="btn btn-danger" id="surrender-btn"><i class="fas fa-flag"></i> Сдаться</button>
+                        <button class="btn btn-primary" id="back-to-lobby-btn"><i class="fas fa-home"></i> В лобби</button>
+                    </div>
+                </div>
+                
+                <div class="game-boards">
+                    <div class="board-container" id="player-board-container">
+                        <h3 class="board-title"><i class="fas fa-user"></i> Ваше поле</h3>
+                        <div class="game-board" id="player-board">
+                            <!-- Игровое поле игрока -->
+                        </div>
+                    </div>
+                    
+                    <div class="board-container" id="opponent-board-container">
+                        <h3 class="board-title"><i class="fas fa-robot"></i> Поле противника</h3>
+                        <div class="game-board" id="opponent-board">
+                            <!-- Игровое поле противника -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ships-panel">
+                    <h3 style="width: 100%; text-align: center; color: #4fc3f7; margin-bottom: 20px; font-size: 1.5rem;">
+                        <i class="fas fa-ship"></i> Ваши корабли
+                    </h3>
+                    <div class="ship-item" id="ship-4">
+                        <div class="ship-cell"></div>
+                        <div class="ship-cell"></div>
+                        <div class="ship-cell"></div>
+                        <div class="ship-cell"></div>
+                        <div class="ship-info">4-палубный (x1)</div>
+                    </div>
+                    <div class="ship-item" id="ship-3">
+                        <div class="ship-cell"></div>
+                        <div class="ship-cell"></div>
+                        <div class="ship-cell"></div>
+                        <div class="ship-info">3-палубный (x2)</div>
+                    </div>
+                    <div class="ship-item" id="ship-2">
+                        <div class="ship-cell"></div>
+                        <div class="ship-cell"></div>
+                        <div class="ship-info">2-палубный (x3)</div>
+                    </div>
+                    <div class="ship-item" id="ship-1">
+                        <div class="ship-cell"></div>
+                        <div class="ship-info">1-палубный (x4)</div>
+                    </div>
+                </div>
+                
+                <div class="game-controls" id="placement-controls">
+                    <button class="btn btn-success" id="random-placement-btn"><i class="fas fa-random"></i> Авторасстановка</button>
+                    <button class="btn btn-primary" id="rotate-ship-btn"><i class="fas fa-redo"></i> Повернуть корабль</button>
+                    <button class="btn btn-warning" id="clear-ships-btn"><i class="fas fa-trash"></i> Очистить поле</button>
+                    <button class="btn btn-accent" id="start-game-btn"><i class="fas fa-play"></i> Начать битву</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Экран статистики -->
+        <div class="screen" id="stats-screen">
+            <div class="stats-container">
+                <h2 style="text-align: center; margin-bottom: 40px; color: #4fc3f7; font-size: 2.5rem;">
+                    <i class="fas fa-chart-bar"></i> Ваша статистика
+                </h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-games">0</div>
+                        <div class="stat-label">Всего игр</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="wins">0</div>
+                        <div class="stat-label">Побед</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="losses">0</div>
+                        <div class="stat-label">Поражений</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="win-rate">0%</div>
+                        <div class="stat-label">Процент побед</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="rating">1000</div>
+                        <div class="stat-label">Рейтинг ELO</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="best-streak">0</div>
+                        <div class="stat-label">Лучшая серия</div>
+                    </div>
+                </div>
+                
+                <h3 style="color: #4fc3f7; margin: 50px 0 20px; font-size: 1.8rem;">
+                    <i class="fas fa-history"></i> История последних игр
+                </h3>
+                <div id="game-history" style="background: rgba(57, 73, 171, 0.7); border-radius: 15px; padding: 20px;">
+                    <!-- История игр будет здесь -->
+                    <div style="text-align: center; padding: 40px; color: #c5cae9; font-size: 1.2rem;">
+                        <i class="fas fa-clock" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
+                        История игр пока пуста. Сыграйте свою первую партию!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно создания комнаты -->
+    <div class="modal hidden" id="create-room-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-room-modal">&times;</button>
+            <h2 style="color: #4fc3f7; margin-bottom: 20px;"><i class="fas fa-door-open"></i> Создание комнаты</h2>
+            <p style="color: #bbdefb; margin-bottom: 30px; line-height: 1.6;">
+                Создайте приватную комнату для игры с другом. Отправьте код приглашения другу, чтобы он мог присоединиться.
+            </p>
+            
+            <div class="form-group">
+                <label for="room-name"><i class="fas fa-heading"></i> Название комнаты (опционально)</label>
+                <input type="text" id="room-name" placeholder="Например: Битва титанов">
+            </div>
+            
+            <div class="form-group">
+                <label for="room-privacy"><i class="fas fa-lock"></i> Приватность комнаты</label>
+                <select id="room-privacy" style="width: 100%; padding: 16px; border-radius: 10px; background: rgba(255, 255, 255, 0.1); color: white; border: 2px solid rgba(79, 195, 247, 0.3);">
+                    <option value="private">Приватная (только по приглашению)</option>
+                    <option value="public">Публичная (видят все)</option>
+                </select>
+            </div>
+            
+            <div style="margin: 40px 0;">
+                <h3 style="color: #4fc3f7; margin-bottom: 20px;">Код приглашения</h3>
+                <div class="invite-code" id="room-invite-code">ABCD123</div>
+                <p style="color: #c5cae9; margin-top: 15px; font-size: 0.9rem;">Код действителен 24 часа</p>
+            </div>
+            
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-success" id="copy-invite-code-btn"><i class="fas fa-copy"></i> Скопировать код</button>
+                <button class="btn btn-primary" id="share-invite-btn"><i class="fas fa-share-alt"></i> Поделиться</button>
+                <button class="btn btn-accent" id="create-room-confirm-btn"><i class="fas fa-check"></i> Создать комнату</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно приглашения -->
+    <div class="modal hidden" id="invite-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-invite-modal">&times;</button>
+            <h2 style="color: #4fc3f7; margin-bottom: 20px;"><i class="fas fa-user-plus"></i> Приглашение в игру</h2>
+            <p style="color: #bbdefb; margin-bottom: 30px; line-height: 1.6;">
+                Введите код приглашения, чтобы присоединиться к игре с другом.
+            </p>
+            
+            <div class="form-group">
+                <label for="invite-code-input"><i class="fas fa-key"></i> Код приглашения</label>
+                <input type="text" id="invite-code-input" placeholder="Введите код, например: ABCD123">
+            </div>
+            
+            <div style="margin: 40px 0; text-align: center;">
+                <button class="btn btn-success" id="join-by-invite-btn" style="padding: 18px 40px; font-size: 1.2rem;">
+                    <i class="fas fa-sign-in-alt"></i> Присоединиться к игре
+                </button>
+            </div>
+            
+            <div style="border-top: 2px solid rgba(79, 195, 247, 0.3); padding-top: 20px;">
+                <p style="color: #c5cae9; text-align: center; font-size: 0.9rem;">
+                    Или подождите, пока друг пришлет вам ссылку с кодом
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно результатов игры -->
+    <div class="modal hidden" id="result-modal">
+        <div class="modal-content">
+            <h2 id="result-title" style="color: #4fc3f7; margin-bottom: 20px; font-size: 2.5rem;"></h2>
+            <div id="result-icon" style="font-size: 5rem; margin: 30px 0; text-align: center;"></div>
+            <p id="result-message" style="color: #bbdefb; margin-bottom: 30px; line-height: 1.6; font-size: 1.3rem; text-align: center;"></p>
+            
+            <div style="background: rgba(0, 0, 0, 0.3); padding: 25px; border-radius: 15px; margin: 30px 0;">
+                <h3 style="color: #4fc3f7; margin-bottom: 15px;">Статистика игры</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="color: #c5cae9;">Время игры: <span id="result-time" style="color: #4fc3f7; font-weight: bold;">00:00</span></div>
+                    <div style="color: #c5cae9;">Ваши выстрелы: <span id="result-shots" style="color: #4fc3f7; font-weight: bold;">0</span></div>
+                    <div style="color: #c5cae9;">Точность: <span id="result-accuracy" style="color: #4fc3f7; font-weight: bold;">0%</span></div>
+                    <div style="color: #c5cae9;">Изменение рейтинга: <span id="result-rating-change" style="color: #4fc3f7; font-weight: bold;">+0</span></div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button class="btn btn-primary" id="play-again-btn"><i class="fas fa-redo"></i> Играть снова</button>
+                <button class="btn btn-accent" id="back-to-lobby-from-result-btn"><i class="fas fa-home"></i> В лобби</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Аудио элементы -->
+    <audio id="shot-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-laser-gun-shot-1678.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="hit-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-explosion-2759.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="miss-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-water-splash-1332.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sunk-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-ship-horn-1250.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="win-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="lose-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-losing-bleeps-2026.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="click-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Основной JavaScript код -->
+    <script>
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            // Скрыть загрузчик через 1.5 секунды
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 1500);
+            
+            // Инициализация игры
+            initApp();
+        });
+        
+        // Основной объект игры
+        const SeaBattle = {
+            // Текущий пользователь
+            currentUser: null,
+            
+            // Состояние игры
+            gameState: {
+                mode: null, // 'ai', 'friend', 'online'
+                status: 'setup', // 'setup', 'player_turn', 'opponent_turn', 'ended'
+                playerBoard: [],
+                opponentBoard: [],
+                playerShips: [],
+                opponentShips: [],
+                placedShips: 0,
+                currentShipSize: 4,
+                shipOrientation: 'horizontal',
+                selectedShip: null,
+                gameTime: 0,
+                timerInterval: null,
+                totalShots: 0,
+                hits: 0,
+                roomId: null,
+                opponent: null,
+                isSoundOn: true,
+                difficulty: 'medium' // 'easy', 'medium', 'hard'
+            },
+            
+            // Звуки
+            sounds: {
+                shot: document.getElementById('shot-sound'),
+                hit: document.getElementById('hit-sound'),
+                miss: document.getElementById('miss-sound'),
+                sunk: document.getElementById('sunk-sound'),
+                win: document.getElementById('win-sound'),
+                lose: document.getElementById('lose-sound'),
+                click: document.getElementById('click-sound')
+            },
+            
+            // Симуляция WebSocket соединения
+            ws: {
+                connected: false,
+                rooms: [],
+                onlinePlayers: [],
+                chatMessages: [],
+                simulateConnection() {
+                    this.connected = true;
+                    document.getElementById('status-text').textContent = 'Онлайн';
+                    document.getElementById('connection-status').className = 'connection-status connected';
+                    
+                    // Симулируем несколько онлайн игроков
+                    this.onlinePlayers = [
+                        { id: 1, name: 'Капитан', rating: 1250, status: 'online' },
+                        { id: 2, name: 'Моряк', rating: 1100, status: 'online' },
+                        { id: 3, name: 'Пират', rating: 980, status: 'ingame' },
+                        { id: 4, name: 'Адмирал', rating: 1450, status: 'online' }
+                    ];
+                    
+                    this.updateOnlinePlayers();
+                    
+                    // Симулируем несколько сообщений в чате
+                    this.chatMessages = [
+                        { user: 'Система', text: 'Добро пожаловать в Sea Battle Online!', time: '10:00', type: 'system' },
+                        { user: 'Капитан', text: 'Кто хочет сыграть?', time: '10:05', type: 'player' },
+                        { user: 'Моряк', text: 'Я готов!', time: '10:06', type: 'player' }
+                    ];
+                    
+                    this.updateChat();
+                    
+                    // Показываем уведомление
+                    this.showNotification('Подключение установлено', 'success');
+                },
+                
+                disconnect() {
+                    this.connected = false;
+                    document.getElementById('status-text').textContent = 'Офлайн';
+                    document.getElementById('connection-status').className = 'connection-status disconnected';
+                    this.showNotification('Отключено от сервера', 'error');
+                },
+                
+                createRoom(roomName, isPrivate) {
+                    const roomId = this.generateRoomId();
+                    const room = {
+                        id: roomId,
+                        name: roomName || `Комната ${roomId}`,
+                        creator: SeaBattle.currentUser.username,
+                        players: [SeaBattle.currentUser.username],
+                        maxPlayers: 2,
+                        isPrivate: isPrivate,
+                        status: 'waiting'
+                    };
+                    
+                    this.rooms.push(room);
+                    this.showNotification(`Комната "${room.name}" создана!`, 'success');
+                    return roomId;
+                },
+                
+                generateRoomId() {
+                    return Math.random().toString(36).substring(2, 8).toUpperCase();
+                },
+                
+                joinRoom(roomId) {
+                    const room = this.rooms.find(r => r.id === roomId);
+                    if (!room) {
+                        this.showNotification('Комната не найдена', 'error');
+                        return false;
+                    }
+                    
+                    if (room.players.length >= room.maxPlayers) {
+                        this.showNotification('Комната заполнена', 'error');
+                        return false;
+                    }
+                    
+                    room.players.push(SeaBattle.currentUser.username);
+                    this.showNotification(`Вы присоединились к комнате "${room.name}"`, 'success');
+                    return true;
+                },
+                
+                sendChatMessage(message, isGlobal = true) {
+                    const chatMsg = {
+                        user: SeaBattle.currentUser.username,
+                        text: message,
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        type: 'player'
+                    };
+                    
+                    this.chatMessages.push(chatMsg);
+                    this.updateChat();
+                    
+                    // Симулируем ответ в глобальном чате
+                    if (isGlobal && Math.random() > 0.7) {
+                        setTimeout(() => {
+                            const botResponses = [
+                                'Привет! Давай сыграем!',
+                                'Кто выиграл последнюю игру?',
+                                'Отличная игра сегодня!',
+                                'Кто хочет в команду?',
+                                'Мой рейтинг сегодня поднялся!'
+                            ];
+                            
+                            const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
+                            const botMsg = {
+                                user: ['Капитан', 'Моряк', 'Пират'][Math.floor(Math.random() * 3)],
+                                text: randomResponse,
+                                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                type: 'player'
+                            };
+                            
+                            this.chatMessages.push(botMsg);
+                            this.updateChat();
+                        }, 1000 + Math.random() * 3000);
+                    }
+                },
+                
+                updateOnlinePlayers() {
+                    const container = document.getElementById('online-players');
+                    if (!container) return;
+                    
+                    container.innerHTML = '';
+                    
+                    // Добавляем ИИ как игрока
+                    const aiPlayer = document.createElement('div');
+                    aiPlayer.className = 'friend-item';
+                    aiPlayer.innerHTML = `
+                        <div class="friend-info">
+                            <div class="friend-status online"></div>
+                            <div class="friend-avatar" style="background: linear-gradient(135deg, #ff4081, #f50057);">AI</div>
+                            <div>
+                                <div class="friend-name">Искусственный интеллект</div>
+                                <div class="friend-rating">Рейтинг: 1200</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="SeaBattle.startGame('ai')">Играть</button>
+                    `;
+                    container.appendChild(aiPlayer);
+                    
+                    // Добавляем онлайн игроков
+                    this.onlinePlayers.forEach(player => {
+                        const playerElement = document.createElement('div');
+                        playerElement.className = 'friend-item';
+                        playerElement.innerHTML = `
+                            <div class="friend-info">
+                                <div class="friend-status ${player.status}"></div>
+                                <div class="friend-avatar">${player.name.charAt(0)}</div>
+                                <div>
+                                    <div class="friend-name">${player.name}</div>
+                                    <div class="friend-rating">Рейтинг: ${player.rating}</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="SeaBattle.invitePlayer('${player.name}')">Пригласить</button>
+                        `;
+                        container.appendChild(playerElement);
+                    });
+                    
+                    // Обновляем счетчик
+                    document.getElementById('online-count').textContent = `(${this.onlinePlayers.length + 1})`;
+                },
+                
+                updateChat() {
+                    const container = document.getElementById('global-chat');
+                    if (!container) return;
+                    
+                    container.innerHTML = '';
+                    
+                    this.chatMessages.forEach(msg => {
+                        const messageElement = document.createElement('div');
+                        messageElement.className = `chat-message ${msg.type === 'system' ? 'system' : (msg.user === SeaBattle.currentUser.username ? 'own' : '')}`;
+                        
+                        if (msg.user === SeaBattle.currentUser.username) {
+                            messageElement.innerHTML = `
+                                <div class="sender">
+                                    Вы
+                                    <span class="time">${msg.time}</span>
+                                </div>
+                                <div>${msg.text}</div>
+                            `;
+                        } else {
+                            messageElement.innerHTML = `
+                                <div class="sender">
+                                    ${msg.user}
+                                    <span class="time">${msg.time}</span>
+                                </div>
+                                <div>${msg.text}</div>
+                            `;
+                        }
+                        
+                        container.appendChild(messageElement);
+                    });
+                    
+                    // Прокручиваем вниз
+                    container.scrollTop = container.scrollHeight;
+                },
+                
+                showNotification(message, type = 'info') {
+                    // Создаем уведомление
+                    const notification = document.createElement('div');
+                    notification.className = `auth-message ${type}`;
+                    notification.textContent = message;
+                    notification.style.position = 'fixed';
+                    notification.style.top = '80px';
+                    notification.style.right = '20px';
+                    notification.style.zIndex = '1000';
+                    notification.style.maxWidth = '300px';
+                    
+                    document.body.appendChild(notification);
+                    
+                    // Удаляем через 3 секунды
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 3000);
+                }
+            },
+            
+            // Инициализация приложения
+            initApp() {
+                // Проверяем сохраненного пользователя
+                this.loadUser();
+                
+                // Инициализация игровых полей
+                this.initGameBoards();
+                
+                // Настройка обработчиков событий
+                this.initEventListeners();
+                
+                // Симулируем подключение к серверу
+                setTimeout(() => {
+                    this.ws.simulateConnection();
+                }, 2000);
+            },
+            
+            // Загрузка пользователя
+            loadUser() {
+                const savedUser = localStorage.getItem('seaBattleUser');
+                if (savedUser) {
+                    try {
+                        this.currentUser = JSON.parse(savedUser);
+                        this.showScreen('lobby');
+                        this.updateUserDisplay();
+                    } catch (e) {
+                        console.error('Ошибка загрузки пользователя:', e);
+                        this.showScreen('auth');
+                    }
+                } else {
+                    this.showScreen('auth');
+                }
+            },
+            
+            // Сохранение пользователя
+            saveUser() {
+                if (this.currentUser) {
+                    localStorage.setItem('seaBattleUser', JSON.stringify(this.currentUser));
+                    
+                    // Также сохраняем в "базу данных"
+                    const users = JSON.parse(localStorage.getItem('seaBattleUsers') || '{}');
+                    users[this.currentUser.username] = this.currentUser;
+                    localStorage.setItem('seaBattleUsers', JSON.stringify(users));
+                }
+            },
+            
+            // Обновление отображения пользователя
+            updateUserDisplay() {
+                if (this.currentUser) {
+                    document.getElementById('username-display').textContent = this.currentUser.username;
+                    document.getElementById('user-rating').textContent = `Рейтинг: ${this.currentUser.rating || 1000}`;
+                    document.getElementById('user-info').style.display = 'inline-flex';
+                }
+            },
+            
+            // Переключение экранов
+            showScreen(screenName) {
+                // Скрываем все экраны
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.classList.remove('active');
+                });
+                
+                // Показываем нужный экран
+                document.getElementById(`${screenName}-screen`).classList.add('active');
+                
+                // Показываем/скрываем хедер
+                document.getElementById('header').style.display = screenName === 'auth' ? 'none' : 'block';
+                
+                // Проигрываем звук клика
+                this.playSound('click');
+            },
+            
+            // Инициализация игровых полей
+            initGameBoards() {
+                // Создаем пустые доски
+                this.gameState.playerBoard = this.createEmptyBoard();
+                this.gameState.opponentBoard = this.createEmptyBoard();
+                
+                // Инициализируем доску игрока
+                const playerBoard = document.getElementById('player-board');
+                playerBoard.innerHTML = '';
+                
+                for (let row = 0; row < 10; row++) {
+                    for (let col = 0; col < 10; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        cell.addEventListener('click', () => this.handlePlayerBoardClick(row, col));
+                        playerBoard.appendChild(cell);
+                    }
+                }
+                
+                // Инициализируем доску противника
+                const opponentBoard = document.getElementById('opponent-board');
+                opponentBoard.innerHTML = '';
+                
+                for (let row = 0; row < 10; row++) {
+                    for (let col = 0; col < 10; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        cell.addEventListener('click', () => this.handleOpponentBoardClick(row, col));
+                        opponentBoard.appendChild(cell);
+                    }
+                }
+                
+                // Инициализируем корабли
+                this.initShips();
+            },
+            
+            // Создание пустой доски
+            createEmptyBoard() {
+                const board = [];
+                for (let i = 0; i < 10; i++) {
+                    board.push(Array(10).fill(0)); // 0 - пусто, 1 - корабль, 2 - попадание, 3 - промах
+                }
+                return board;
+            },
+            
+            // Инициализация кораблей
+            initShips() {
+                this.gameState.playerShips = [
+                    { size: 4, positions: [], placed: false, sunk: false },
+                    { size: 3, positions: [], placed: false, sunk: false },
+                    { size: 3, positions: [], placed: false, sunk: false },
+                    { size: 2, positions: [], placed: false, sunk: false },
+                    { size: 2, positions: [], placed: false, sunk: false },
+                    { size: 2, positions: [], placed: false, sunk: false },
+                    { size: 1, positions: [], placed: false, sunk: false },
+                    { size: 1, positions: [], placed: false, sunk: false },
+                    { size: 1, positions: [], placed: false, sunk: false },
+                    { size: 1, positions: [], placed: false, sunk: false }
+                ];
+                
+                this.gameState.opponentShips = [
+                    { size: 4, positions: [], sunk: false },
+                    { size: 3, positions: [], sunk: false },
+                    { size: 3, positions: [], sunk: false },
+                    { size: 2, positions: [], sunk: false },
+                    { size: 2, positions: [], sunk: false },
+                    { size: 2, positions: [], sunk: false },
+                    { size: 1, positions: [], sunk: false },
+                    { size: 1, positions: [], sunk: false },
+                    { size: 1, positions: [], sunk: false },
+                    { size: 1, positions: [], sunk: false }
+                ];
+            },
+            
+            // Начало игры
+            startGame(mode) {
+                this.gameState.mode = mode;
+                this.gameState.status = 'setup';
+                this.gameState.placedShips = 0;
+                this.gameState.currentShipSize = 4;
+                this.gameState.shipOrientation = 'horizontal';
+                this.gameState.totalShots = 0;
+                this.gameState.hits = 0;
+                
+                // Сброс досок
+                this.initGameBoards();
+                
+                // Обновление интерфейса
+                document.getElementById('game-status').textContent = 'Расстановка кораблей';
+                document.getElementById('game-turn').textContent = 'Разместите ваши корабли на поле';
+                document.getElementById('start-game-btn').style.display = 'inline-flex';
+                
+                // В зависимости от режима
+                if (mode === 'ai') {
+                    document.querySelector('#opponent-board-container .board-title').innerHTML = '<i class="fas fa-robot"></i> Поле ИИ';
+                    this.placeOpponentShips();
+                } else if (mode === 'friend') {
+                    document.querySelector('#opponent-board-container .board-title').innerHTML = '<i class="fas fa-user-friends"></i> Поле друга';
+                } else if (mode === 'online') {
+                    document.querySelector('#opponent-board-container .board-title').innerHTML = '<i class="fas fa-globe"></i> Поле противника';
+                }
+                
+                // Показываем игровой экран
+                this.showScreen('game');
+                
+                // Обновляем отображение кораблей
+                this.updateShipsDisplay();
+            },
+            
+            // Размещение кораблей противника (ИИ)
+            placeOpponentShips() {
+                const shipSizes = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
+                let shipIndex = 0;
+                
+                for (const size of shipSizes) {
+                    let placed = false;
+                    let attempts = 0;
+                    
+                    while (!placed && attempts < 100) {
+                        const row = Math.floor(Math.random() * 10);
+                        const col = Math.floor(Math.random() * 10);
+                        const orientation = Math.random() > 0.5 ? 'horizontal' : 'vertical';
+                        
+                        if (this.canPlaceShip(this.gameState.opponentBoard, row, col, size, orientation)) {
+                            // Размещаем корабль
+                            const positions = [];
+                            
+                            if (orientation === 'horizontal') {
+                                for (let c = col; c < col + size; c++) {
+                                    this.gameState.opponentBoard[row][c] = 1;
+                                    positions.push({ row, col: c });
+                                }
+                            } else {
+                                for (let r = row; r < row + size; r++) {
+                                    this.gameState.opponentBoard[r][col] = 1;
+                                    positions.push({ row: r, col });
+                                }
+                            }
+                            
+                            this.gameState.opponentShips[shipIndex].positions = positions;
+                            placed = true;
+                            shipIndex++;
+                        }
+                        attempts++;
+                    }
+                }
+            },
+            
+            // Проверка возможности размещения корабля
+            canPlaceShip(board, row, col, size, orientation) {
+                if (orientation === 'horizontal') {
+                    if (col + size > 10) return false;
+                    for (let c = col; c < col + size; c++) {
+                        if (board[row][c] !== 0) return false;
+                        // Проверка соседних клеток
+                        for (let r = Math.max(0, row - 1); r <= Math.min(9, row + 1); r++) {
+                            for (let c2 = Math.max(0, c - 1); c2 <= Math.min(9, c + 1); c2++) {
+                                if (board[r][c2] !== 0) return false;
+                            }
+                        }
+                    }
+                } else {
+                    if (row + size > 10) return false;
+                    for (let r = row; r < row + size; r++) {
+                        if (board[r][col] !== 0) return false;
+                        for (let r2 = Math.max(0, r - 1); r2 <= Math.min(9, r + 1); r2++) {
+                            for (let c = Math.max(0, col - 1); c <= Math.min(9, col + 1); c++) {
+                                if (board[r2][c] !== 0) return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            },
+            
+            // Обработка клика по своей доске (размещение кораблей)
+            handlePlayerBoardClick(row, col) {
+                if (this.gameState.status !== 'setup') return;
+                
+                const shipSize = this.getCurrentShipSize();
+                if (!shipSize) return;
+                
+                if (this.canPlaceShip(this.gameState.playerBoard, row, col, shipSize, this.gameState.shipOrientation)) {
+                    this.placeShip(row, col, shipSize, this.gameState.shipOrientation);
+                    this.playSound('click');
+                    
+                    // Проверяем, все ли корабли размещены
+                    if (this.gameState.placedShips === 10) {
+                        document.getElementById('game-turn').textContent = 'Все корабли размещены! Нажмите "Начать битву"';
+                    }
+                } else {
+                    // Визуальная обратная связь
+                    const cell = document.querySelector(`#player-board .cell[data-row="${row}"][data-col="${col}"]`);
+                    cell.style.backgroundColor = 'rgba(244, 67, 54, 0.5)';
+                    setTimeout(() => {
+                        cell.style.backgroundColor = '';
+                    }, 300);
+                }
+            },
+            
+            // Получение текущего размера корабля для размещения
+            getCurrentShipSize() {
+                for (const ship of this.gameState.playerShips) {
+                    if (!ship.placed) {
+                        return ship.size;
+                    }
+                }
+                return null;
+            },
+            
+            // Размещение корабля
+            placeShip(row, col, size, orientation) {
+                const shipIndex = this.gameState.playerShips.findIndex(ship => ship.size === size && !ship.placed);
+                if (shipIndex === -1) return;
+                
+                const positions = [];
+                
+                if (orientation === 'horizontal') {
+                    for (let c = col; c < col + size; c++) {
+                        this.gameState.playerBoard[row][c] = 1;
+                        positions.push({ row, col: c });
+                        
+                        // Обновляем отображение
+                        const cell = document.querySelector(`#player-board .cell[data-row="${row}"][data-col="${c}"]`);
+                        cell.classList.add('ship');
+                    }
+                } else {
+                    for (let r = row; r < row + size; r++) {
+                        this.gameState.playerBoard[r][col] = 1;
+                        positions.push({ row: r, col });
+                        
+                        const cell = document.querySelector(`#player-board .cell[data-row="${r}"][data-col="${col}"]`);
+                        cell.classList.add('ship');
+                    }
+                }
+                
+                this.gameState.playerShips[shipIndex].positions = positions;
+                this.gameState.playerShips[shipIndex].placed = true;
+                this.gameState.placedShips++;
+                
+                // Обновляем отображение кораблей
+                this.updateShipsDisplay();
+            },
+            
+            // Обновление отображения кораблей
+            updateShipsDisplay() {
+                // Обновляем статус каждого корабля
+                this.gameState.playerShips.forEach((ship, index) => {
+                    const shipElement = document.getElementById(`ship-${ship.size}`);
+                    if (shipElement) {
+                        if (ship.placed) {
+                            shipElement.classList.add('placed');
+                        } else {
+                            shipElement.classList.remove('placed');
+                        }
+                    }
+                });
+            },
+            
+            // Автоматическая расстановка кораблей
+            placeShipsRandomly() {
+                // Очищаем поле
+                this.initGameBoards();
+                this.gameState.playerBoard = this.createEmptyBoard();
+                this.gameState.placedShips = 0;
+                
+                // Размещаем корабли случайным образом
+                const shipSizes = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
+                
+                for (const size of shipSizes) {
+                    let placed = false;
+                    let attempts = 0;
+                    
+                    while (!placed && attempts < 100) {
+                        const row = Math.floor(Math.random() * 10);
+                        const col = Math.floor(Math.random() * 10);
+                        const orientation = Math.random() > 0.5 ? 'horizontal' : 'vertical';
+                        
+                        if (this.canPlaceShip(this.gameState.playerBoard, row, col, size, orientation)) {
+                            this.placeShip(row, col, size, orientation);
+                            placed = true;
+                        }
+                        attempts++;
+                    }
+                }
+                
+                document.getElementById('game-turn').textContent = 'Корабли размещены автоматически! Нажмите "Начать битву"';
+                this.playSound('win');
+            },
+            
+            // Поворот корабля
+            rotateShip() {
+                this.gameState.shipOrientation = this.gameState.shipOrientation === 'horizontal' ? 'vertical' : 'horizontal';
+                this.playSound('click');
+                
+                // Анимация кнопки
+                const btn = document.getElementById('rotate-ship-btn');
+                btn.style.transform = 'rotate(180deg)';
+                setTimeout(() => {
+                    btn.style.transform = '';
+                }, 300);
+            },
+            
+            // Обработка клика по доске противника (выстрел)
+            handleOpponentBoardClick(row, col) {
+                if (this.gameState.status !== 'player_turn') return;
+                
+                // Проверяем, не стреляли ли уже в эту клетку
+                const cell = document.querySelector(`#opponent-board .cell[data-row="${row}"][data-col="${col}"]`);
+                if (cell.classList.contains('hit') || cell.classList.contains('miss')) {
+                    return;
+                }
+                
+                // Делаем выстрел
+                this.gameState.totalShots++;
+                this.playSound('shot');
+                const isHit = this.gameState.opponentBoard[row][col] === 1;
+                
+                if (isHit) {
+                    // Попадание
+                    cell.classList.add('hit');
+                    this.gameState.opponentBoard[row][col] = 2;
+                    this.gameState.hits++;
+                    this.playSound('hit');
+                    
+                    // Проверяем, потоплен ли корабль
+                    const shipIndex = this.gameState.opponentShips.findIndex(ship => 
+                        ship.positions.some(pos => pos.row === row && pos.col === col)
+                    );
+                    
+                    if (shipIndex !== -1) {
+                        const ship = this.gameState.opponentShips[shipIndex];
+                        const hitPosition = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
+                        
+                        if (hitPosition !== -1) {
+                            // Помечаем попадание в корабль
+                            if (!ship.positions[hitPosition].hit) {
+                                ship.positions[hitPosition].hit = true;
+                                
+                                // Проверяем, потоплен ли весь корабль
+                                if (ship.positions.every(pos => pos.hit)) {
+                                    ship.sunk = true;
+                                    this.playSound('sunk');
+                                    
+                                    // Подсвечиваем потопленный корабль
+                                    ship.positions.forEach(pos => {
+                                        const sunkCell = document.querySelector(
+                                            `#opponent-board .cell[data-row="${pos.row}"][data-col="${pos.col}"]`
+                                        );
+                                        if (sunkCell) {
+                                            sunkCell.classList.add('sunk');
+                                        }
+                                    });
+                                    
+                                    // Проверяем, потоплены ли все корабли
+                                    if (this.gameState.opponentShips.every(s => s.sunk)) {
+                                        this.endGame(true);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Если попали, ход остается у игрока
+                    document.getElementById('game-turn').textContent = 'Попадание! Продолжайте атаку';
+                } else {
+                    // Промах
+                    cell.classList.add('miss');
+                    this.gameState.opponentBoard[row][col] = 3;
+                    this.playSound('miss');
+                    
+                    // Передаем ход противнику
+                    this.gameState.status = 'opponent_turn';
+                    document.getElementById('game-status').textContent = 'Ход противника';
+                    document.getElementById('game-turn').textContent = 'Противник думает...';
+                    
+                    // В режиме против ИИ - ИИ делает ход
+                    if (this.gameState.mode === 'ai') {
+                        setTimeout(() => this.makeAIMove(), 800);
+                    }
+                }
+            },
+            
+            // Ход ИИ
+            makeAIMove() {
+                if (this.gameState.status !== 'opponent_turn') return;
+                
+                // "Умный" алгоритм ИИ
+                let row, col;
+                let found = false;
+                
+                // 1. Ищем раненый корабль (для прицельного огня)
+                for (let r = 0; r < 10 && !found; r++) {
+                    for (let c = 0; c < 10 && !found; c++) {
+                        if (this.gameState.playerBoard[r][c] === 2) { // Попадание
+                            // Проверяем соседние клетки
+                            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                            for (const [dr, dc] of directions) {
+                                const nr = r + dr;
+                                const nc = c + dc;
+                                if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10) {
+                                    if (this.gameState.playerBoard[nr][nc] === 0) { // Еще не стреляли
+                                        row = nr;
+                                        col = nc;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 2. Если не нашли, стреляем по шаблону (в зависимости от сложности)
+                if (!found) {
+                    const strategy = this.getAIStrategy();
+                    const emptyCells = [];
+                    
+                    for (let r = 0; r < 10; r++) {
+                        for (let c = 0; c < 10; c++) {
+                            if (this.gameState.playerBoard[r][c] === 0) {
+                                emptyCells.push({ r, c });
+                            }
+                        }
+                    }
+                    
+                    if (emptyCells.length === 0) return;
+                    
+                    // Выбираем стратегию в зависимости от сложности
+                    if (strategy === 'smart') {
+                        // "Умная" стратегия: стреляем по диагоналям, где чаще всего размещают корабли
+                        const priorityCells = emptyCells.filter(cell => 
+                            (cell.r + cell.c) % 2 === 0 || // Четные диагонали
+                            (cell.r % 2 === 0 && cell.c % 2 === 0) // Четные клетки
+                        );
+                        
+                        const targetCells = priorityCells.length > 0 ? priorityCells : emptyCells;
+                        const randomIndex = Math.floor(Math.random() * targetCells.length);
+                        row = targetCells[randomIndex].r;
+                        col = targetCells[randomIndex].c;
+                    } else {
+                        // Простая стратегия: случайный выстрел
+                        const randomIndex = Math.floor(Math.random() * emptyCells.length);
+                        row = emptyCells[randomIndex].r;
+                        col = emptyCells[randomIndex].c;
+                    }
+                }
+                
+                // Делаем выстрел
+                this.gameState.totalShots++;
+                setTimeout(() => {
+                    this.playSound('shot');
+                    
+                    const cell = document.querySelector(`#player-board .cell[data-row="${row}"][data-col="${col}"]`);
+                    const isHit = this.gameState.playerBoard[row][col] === 1;
+                    
+                    if (isHit) {
+                        // Попадание ИИ
+                        cell.classList.add('hit');
+                        this.gameState.playerBoard[row][col] = 2;
+                        this.playSound('hit');
+                        
+                        // Проверяем, потоплен ли корабль
+                        const shipIndex = this.gameState.playerShips.findIndex(ship => 
+                            ship.positions.some(pos => pos.row === row && pos.col === col)
+                        );
+                        
+                        if (shipIndex !== -1) {
+                            const ship = this.gameState.playerShips[shipIndex];
+                            const hitPosition = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
+                            
+                            if (hitPosition !== -1 && !ship.positions[hitPosition].hit) {
+                                ship.positions[hitPosition].hit = true;
+                                
+                                // Проверяем, потоплен ли весь корабль
+                                if (ship.positions.every(pos => pos.hit)) {
+                                    ship.sunk = true;
+                                    this.playSound('sunk');
+                                    
+                                    // Подсвечиваем потопленный корабль
+                                    ship.positions.forEach(pos => {
+                                        const sunkCell = document.querySelector(
+                                            `#player-board .cell[data-row="${pos.row}"][data-col="${pos.col}"]`
+                                        );
+                                        if (sunkCell) {
+                                            sunkCell.classList.add('sunk');
+                                        }
+                                    });
+                                    
+                                    // Проверяем, потоплены ли все корабли
+                                    if (this.gameState.playerShips.every(s => s.sunk)) {
+                                        this.endGame(false);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // ИИ продолжает ход, если попал
+                        setTimeout(() => this.makeAIMove(), 1000);
+                    } else {
+                        // Промах ИИ
+                        cell.classList.add('miss');
+                        this.gameState.playerBoard[row][col] = 3;
+                        this.playSound('miss');
+                        
+                        // Передаем ход игроку
+                        this.gameState.status = 'player_turn';
+                        document.getElementById('game-status').textContent = 'Ваш ход';
+                        document.getElementById('game-turn').textContent = 'Атакуйте поле противника';
+                    }
+                }, 500);
+            },
+            
+            // Получение стратегии ИИ в зависимости от сложности
+            getAIStrategy() {
+                switch (this.gameState.difficulty) {
+                    case 'easy': return 'random';
+                    case 'medium': return Math.random() > 0.5 ? 'smart' : 'random';
+                    case 'hard': return 'smart';
+                    default: return 'random';
+                }
+            },
+            
+            // Начало битвы
+            startBattle() {
+                if (this.gameState.placedShips < 10) {
+                    this.ws.showNotification('Разместите все корабли перед началом игры!', 'error');
+                    return;
+                }
+                
+                this.gameState.status = 'player_turn';
+                document.getElementById('game-status').textContent = 'Ваш ход';
+                document.getElementById('game-turn').textContent = 'Атакуйте поле противника';
+                document.getElementById('start-game-btn').style.display = 'none';
+                
+                // Запускаем таймер
+                this.startTimer();
+                this.playSound('win');
+            },
+            
+            // Запуск таймера
+            startTimer() {
+                clearInterval(this.gameState.timerInterval);
+                this.gameState.gameTime = 0;
+                
+                this.gameState.timerInterval = setInterval(() => {
+                    this.gameState.gameTime++;
+                    const minutes = Math.floor(this.gameState.gameTime / 60);
+                    const seconds = this.gameState.gameTime % 60;
+                    document.getElementById('timer').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            },
+            
+            // Окончание игры
+            endGame(isWin) {
+                clearInterval(this.gameState.timerInterval);
+                this.gameState.status = 'ended';
+                
+                // Вычисляем точность
+                const accuracy = this.gameState.totalShots > 0 
+                    ? Math.round((this.gameState.hits / this.gameState.totalShots) * 100) 
+                    : 0;
+                
+                // Обновляем статистику пользователя
+                if (this.currentUser) {
+                    if (!this.currentUser.stats) {
+                        this.currentUser.stats = { wins: 0, losses: 0, totalGames: 0, bestStreak: 0, currentStreak: 0 };
+                    }
+                    
+                    this.currentUser.stats.totalGames = (this.currentUser.stats.totalGames || 0) + 1;
+                    
+                    if (isWin) {
+                        this.currentUser.stats.wins = (this.currentUser.stats.wins || 0) + 1;
+                        this.currentUser.stats.currentStreak = (this.currentUser.stats.currentStreak || 0) + 1;
+                        
+                        if (this.currentUser.stats.currentStreak > (this.currentUser.stats.bestStreak || 0)) {
+                            this.currentUser.stats.bestStreak = this.currentUser.stats.currentStreak;
+                        }
+                        
+                        // Увеличиваем рейтинг
+                        this.currentUser.rating = (this.currentUser.rating || 1000) + 25;
+                    } else {
+                        this.currentUser.stats.losses = (this.currentUser.stats.losses || 0) + 1;
+                        this.currentUser.stats.currentStreak = 0;
+                        
+                        // Уменьшаем рейтинг
+                        this.currentUser.rating = Math.max(0, (this.currentUser.rating || 1000) - 15);
+                    }
+                    
+                    this.saveUser();
+                }
+                
+                // Показываем модальное окно с результатами
+                this.showResultModal(isWin, accuracy);
+                
+                // Проигрываем звук
+                this.playSound(isWin ? 'win' : 'lose');
+            },
+            
+            // Показ модального окна с результатами
+            showResultModal(isWin, accuracy) {
+                const modal = document.getElementById('result-modal');
+                const title = document.getElementById('result-title');
+                const icon = document.getElementById('result-icon');
+                const message = document.getElementById('result-message');
+                const time = document.getElementById('result-time');
+                const shots = document.getElementById('result-shots');
+                const accuracyEl = document.getElementById('result-accuracy');
+                const ratingChange = document.getElementById('result-rating-change');
+                
+                if (isWin) {
+                    title.textContent = 'ПОБЕДА!';
+                    icon.textContent = '🏆';
+                    message.textContent = 'Вы потопили все корабли противника! Отличная игра!';
+                    ratingChange.textContent = '+25';
+                    ratingChange.style.color = '#4caf50';
+                } else {
+                    title.textContent = 'ПОРАЖЕНИЕ';
+                    icon.textContent = '💀';
+                    message.textContent = 'Все ваши корабли потоплены. Не расстраивайтесь, попробуйте еще раз!';
+                    ratingChange.textContent = '-15';
+                    ratingChange.style.color = '#f44336';
+                }
+                
+                // Заполняем статистику
+                const minutes = Math.floor(this.gameState.gameTime / 60);
+                const seconds = this.gameState.gameTime % 60;
+                time.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                shots.textContent = this.gameState.totalShots;
+                accuracyEl.textContent = `${accuracy}%`;
+                
+                // Показываем модальное окно
+                modal.classList.remove('hidden');
+            },
+            
+            // Проигрывание звука
+            playSound(soundName) {
+                if (!this.gameState.isSoundOn) return;
+                
+                const sound = this.sounds[soundName];
+                if (sound) {
+                    sound.currentTime = 0;
+                    sound.play().catch(e => console.log('Звук не воспроизведен:', e));
+                }
+            },
+            
+            // Переключение звука
+            toggleSound() {
+                this.gameState.isSoundOn = !this.gameState.isSoundOn;
+                const icon = document.querySelector('#sound-toggle i');
+                
+                if (this.gameState.isSoundOn) {
+                    icon.className = 'fas fa-volume-up';
+                    this.playSound('click');
+                } else {
+                    icon.className = 'fas fa-volume-mute';
+                }
+            },
+            
+            // Инициализация обработчиков событий
+            initEventListeners() {
+                // Авторизация
+                document.getElementById('login-tab').addEventListener('click', () => this.switchAuthTab('login'));
+                document.getElementById('register-tab').addEventListener('click', () => this.switchAuthTab('register'));
+                document.getElementById('login-btn').addEventListener('click', () => this.login());
+                document.getElementById('register-btn').addEventListener('click', () => this.register());
+                
+                // Лобби
+                document.getElementById('lobby-btn').addEventListener('click', () => this.showScreen('lobby'));
+                document.getElementById('stats-btn').addEventListener('click', () => {
+                    this.loadStats();
+                    this.showScreen('stats');
+                });
+                document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+                
+                // Режимы игры
+                document.getElementById('play-ai-btn').addEventListener('click', () => this.startGame('ai'));
+                document.getElementById('create-room-btn').addEventListener('click', () => this.showCreateRoomModal());
+                document.getElementById('find-match-btn').addEventListener('click', () => this.findOnlineMatch());
+                
+                // Игра
+                document.getElementById('back-to-lobby-btn').addEventListener('click', () => this.returnToLobby());
+                document.getElementById('surrender-btn').addEventListener('click', () => this.surrender());
+                document.getElementById('random-placement-btn').addEventListener('click', () => this.placeShipsRandomly());
+                document.getElementById('rotate-ship-btn').addEventListener('click', () => this.rotateShip());
+                document.getElementById('clear-ships-btn').addEventListener('click', () => {
+                    if (confirm('Вы уверены, что хотите очистить поле и начать расстановку заново?')) {
+                        this.startGame(this.gameState.mode);
+                    }
+                });
+                document.getElementById('start-game-btn').addEventListener('click', () => this.startBattle());
+                
+                // Чат
+                document.getElementById('send-global-chat').addEventListener('click', () => this.sendChatMessage());
+                document.getElementById('global-chat-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendChatMessage();
+                });
+                
+                // Модальные окна
+                document.getElementById('close-room-modal').addEventListener('click', () => {
+                    document.getElementById('create-room-modal').classList.add('hidden');
+                });
+                document.getElementById('close-invite-modal').addEventListener('click', () => {
+                    document.getElementById('invite-modal').classList.add('hidden');
+                });
+                document.getElementById('copy-invite-code-btn').addEventListener('click', () => this.copyInviteCode());
+                document.getElementById('create-room-confirm-btn').addEventListener('click', () => this.confirmCreateRoom());
+                document.getElementById('join-by-invite-btn').addEventListener('click', () => this.joinByInvite());
+                
+                // Результаты игры
+                document.getElementById('play-again-btn').addEventListener('click', () => {
+                    document.getElementById('result-modal').classList.add('hidden');
+                    this.startGame(this.gameState.mode);
+                });
+                document.getElementById('back-to-lobby-from-result-btn').addEventListener('click', () => {
+                    document.getElementById('result-modal').classList.add('hidden');
+                    this.showScreen('lobby');
+                });
+                
+                // Звук
+                document.getElementById('sound-toggle').addEventListener('click', () => this.toggleSound());
+            },
+            
+            // Авторизация
+            switchAuthTab(tab) {
+                document.getElementById('login-tab').classList.toggle('active', tab === 'login');
+                document.getElementById('register-tab').classList.toggle('active', tab === 'register');
+                document.getElementById('login-form').classList.toggle('active', tab === 'login');
+                document.getElementById('register-form').classList.toggle('active', tab === 'register');
+                this.playSound('click');
+            },
+            
+            // Вход
+            login() {
+                const username = document.getElementById('login-username').value.trim();
+                const password = document.getElementById('login-password').value;
+                const messageEl = document.getElementById('login-message');
+                
+                if (!username || !password) {
+                    this.showAuthMessage('Заполните все поля', 'error', messageEl);
+                    return;
+                }
+                
+                // Проверяем существующего пользователя
+                const users = JSON.parse(localStorage.getItem('seaBattleUsers') || '{}');
+                
+                if (!users[username]) {
+                    this.showAuthMessage('Пользователь не найден', 'error', messageEl);
+                    return;
+                }
+                
+                if (users[username].password !== password) {
+                    this.showAuthMessage('Неверный пароль', 'error', messageEl);
+                    return;
+                }
+                
+                // Успешный вход
+                this.currentUser = users[username];
+                this.saveUser();
+                this.showAuthMessage('Успешный вход!', 'success', messageEl);
+                this.playSound('win');
+                
+                setTimeout(() => {
+                    this.showScreen('lobby');
+                    this.updateUserDisplay();
+                }, 1500);
+            },
+            
+            // Регистрация
+            register() {
+                const username = document.getElementById('register-username').value.trim();
+                const password = document.getElementById('register-password').value;
+                const email = document.getElementById('register-email').value.trim();
+                const messageEl = document.getElementById('register-message');
+                
+                if (!username || !password) {
+                    this.showAuthMessage('Заполните обязательные поля', 'error', messageEl);
+                    return;
+                }
+                
+                if (username.length < 3 || username.length > 15) {
+                    this.showAuthMessage('Имя пользователя должно быть от 3 до 15 символов', 'error', messageEl);
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    this.showAuthMessage('Пароль должен содержать минимум 6 символов', 'error', messageEl);
+                    return;
+                }
+                
+                // Проверяем, существует ли пользователь
+                const users = JSON.parse(localStorage.getItem('seaBattleUsers') || '{}');
+                
+                if (users[username]) {
+                    this.showAuthMessage('Пользователь уже существует', 'error', messageEl);
+                    return;
+                }
+                
+                // Создаем нового пользователя
+                this.currentUser = {
+                    username,
+                    email: email || '',
+                    password,
+                    rating: 1000,
+                    stats: {
+                        wins: 0,
+                        losses: 0,
+                        totalGames: 0,
+                        bestStreak: 0,
+                        currentStreak: 0
+                    },
+                    joined: new Date().toISOString()
+                };
+                
+                this.saveUser();
+                this.showAuthMessage('Регистрация успешна!', 'success', messageEl);
+                this.playSound('win');
+                
+                setTimeout(() => {
+                    this.showScreen('lobby');
+                    this.updateUserDisplay();
+                }, 1500);
+            },
+            
+            // Показ сообщения авторизации
+            showAuthMessage(text, type, element) {
+                element.textContent = text;
+                element.className = `auth-message ${type}`;
+            },
+            
+            // Выход
+            logout() {
+                this.currentUser = null;
+                localStorage.removeItem('seaBattleUser');
+                this.showScreen('auth');
+                this.playSound('click');
+            },
+            
+            // Загрузка статистики
+            loadStats() {
+                if (!this.currentUser) return;
+                
+                const stats = this.currentUser.stats || { wins: 0, losses: 0, totalGames: 0 };
+                const totalGames = stats.totalGames || 0;
+                const wins = stats.wins || 0;
+                const losses = stats.losses || 0;
+                const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+                const rating = this.currentUser.rating || 1000;
+                const bestStreak = stats.bestStreak || 0;
+                
+                document.getElementById('total-games').textContent = totalGames;
+                document.getElementById('wins').textContent = wins;
+                document.getElementById('losses').textContent = losses;
+                document.getElementById('win-rate').textContent = `${winRate}%`;
+                document.getElementById('rating').textContent = rating;
+                document.getElementById('best-streak').textContent = bestStreak;
+            },
+            
+            // Создание комнаты
+            showCreateRoomModal() {
+                // Генерируем случайный код комнаты
+                const roomCode = this.ws.generateRoomId();
+                document.getElementById('room-invite-code').textContent = roomCode;
+                
+                // Показываем модальное окно
+                document.getElementById('create-room-modal').classList.remove('hidden');
+                this.playSound('click');
+            },
+            
+            // Подтверждение создания комнаты
+            confirmCreateRoom() {
+                const roomName = document.getElementById('room-name').value.trim();
+                const isPrivate = document.getElementById('room-privacy').value === 'private';
+                const roomCode = document.getElementById('room-invite-code').textContent;
+                
+                // Создаем комнату через WebSocket симуляцию
+                this.ws.createRoom(roomName || `Комната ${roomCode}`, isPrivate);
+                
+                // Закрываем модальное окно
+                document.getElementById('create-room-modal').classList.add('hidden');
+                
+                // Начинаем игру с другом
+                this.startGame('friend');
+                
+                // Устанавливаем код комнаты
+                this.gameState.roomId = roomCode;
+                this.ws.showNotification(`Комната создана! Код: ${roomCode}`, 'success');
+            },
+            
+            // Копирование кода приглашения
+            copyInviteCode() {
+                const code = document.getElementById('room-invite-code').textContent;
+                navigator.clipboard.writeText(code).then(() => {
+                    this.ws.showNotification('Код скопирован в буфер обмена!', 'success');
+                }).catch(err => {
+                    this.ws.showNotification('Не удалось скопировать код', 'error');
+                });
+                this.playSound('click');
+            },
+            
+            // Поиск онлайн матча
+            findOnlineMatch() {
+                this.ws.showNotification('Поиск соперника...', 'info');
+                this.playSound('click');
+                
+                // Симулируем поиск матча
+                setTimeout(() => {
+                    const found = Math.random() > 0.3; // 70% шанс найти соперника
+                    
+                    if (found) {
+                        this.ws.showNotification('Соперник найден! Начинаем игру...', 'success');
+                        setTimeout(() => {
+                            this.startGame('online');
+                        }, 1500);
+                    } else {
+                        this.ws.showNotification('Не удалось найти соперника. Попробуйте позже или создайте комнату для друга.', 'error');
+                    }
+                }, 2000);
+            },
+            
+            // Присоединение по приглашению
+            joinByInvite() {
+                const inviteCode = document.getElementById('invite-code-input').value.trim().toUpperCase();
+                
+                if (!inviteCode) {
+                    this.ws.showNotification('Введите код приглашения', 'error');
+                    return;
+                }
+                
+                // Симулируем присоединение к комнате
+                const success = this.ws.joinRoom(inviteCode);
+                
+                if (success) {
+                    document.getElementById('invite-modal').classList.add('hidden');
+                    this.gameState.roomId = inviteCode;
+                    this.startGame('friend');
+                }
+            },
+            
+            // Приглашение игрока
+            invitePlayer(playerName) {
+                this.ws.showNotification(`Приглашение отправлено игроку ${playerName}`, 'success');
+                this.playSound('click');
+                
+                // Симулируем ответ через несколько секунд
+                setTimeout(() => {
+                    const accepted = Math.random() > 0.5;
+                    
+                    if (accepted) {
+                        this.ws.showNotification(`${playerName} принял ваше приглашение!`, 'success');
+                        setTimeout(() => {
+                            this.startGame('online');
+                        }, 1000);
+                    } else {
+                        this.ws.showNotification(`${playerName} отклонил приглашение`, 'error');
+                    }
+                }, 2000);
+            },
+            
+            // Отправка сообщения в чат
+            sendChatMessage() {
+                const input = document.getElementById('global-chat-input');
+                const message = input.value.trim();
+                
+                if (!message) return;
+                
+                if (this.currentUser) {
+                    this.ws.sendChatMessage(message);
+                    input.value = '';
+                    this.playSound('click');
+                } else {
+                    this.ws.showNotification('Войдите в систему, чтобы отправлять сообщения', 'error');
+                }
+            },
+            
+            // Возврат в лобби
+            returnToLobby() {
+                if (this.gameState.status === 'setup' || confirm('Вы уверены, что хотите выйти из игры?')) {
+                    clearInterval(this.gameState.timerInterval);
+                    this.showScreen('lobby');
+                    this.playSound('click');
+                }
+            },
+            
+            // Сдача
+            surrender() {
+                if (confirm('Вы уверены, что хотите сдаться?')) {
+                    this.endGame(false);
+                }
+            }
+        };
+        
+        // Делаем объект глобально доступным
+        window.SeaBattle = SeaBattle;
+        
+        // Запускаем приложение
+        window.addEventListener('load', () => {
+            SeaBattle.initApp();
+        });
+    </script>
+</body>
+</html>
